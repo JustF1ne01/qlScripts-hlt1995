@@ -48,13 +48,13 @@ ql repo https://gitee.com/hlt1995/qlScripts.git "" "Backup" "" "" "js|sh|py"
 
 ### 📦️ 顺丰速运
 
-- `SFExpress.py` `SFExpress_NewYear.py` `SFExpress_Lottery.py` &emsp;环境变量：`sfsyUrl`
+- `SFExpress.py` `SFExpress_Year.py` `SFExpress_Lottery.py` &emsp;环境变量：`sfsyUrl`
 
->手机开启抓包软件，进入微信 -> 小程序(顺丰速运) -> 我的 -> 积分
+>手机开启抓包软件，进入顺丰速运APP -> 我的 -> 积分
 
->搜索 `https://mcs-mimp-web.sf-express.com/mcs-mimp/share/weChat/activityRedirect?source=` 的请求链接
+>搜索 `https://mcs-mimp-web.sf-express.com/mcs-mimp/share/app/` 的响应头，找到`sessionId` `_login_mobile_` `_login_user_id_`
 
->CK格式：`编码后的url` `&`
+>CK格式：`sessionId=ABC;_login_mobile_=123;_login_user_id_=DEF` `&`
 
 
 ### ✈️ 同程旅行
