@@ -84,7 +84,7 @@ ql repo https://gitee.com/hlt1995/qlScripts.git "" "Backup" "" "" "js|sh|py"
 >CK格式：`手机号#服务密码` `&`
 
 
-### ☕️ 雀巢会员
+### ☕️ 雀巢会员（CK时效短，暂无解决方法）
 
 - `Nestle.js` &emsp;环境变量：`NESTLE_TOKEN`
 
