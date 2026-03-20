@@ -50,9 +50,7 @@ ql repo https://gitee.com/hlt1995/qlScripts.git "" "Backup" "" "" "js|sh|py"
 
 - `SFExpress.py` `SFExpress_Year.py` `SFExpress_Lottery.py` &emsp;环境变量：`sfsyUrl`
 
->手机开启抓包软件，进入顺丰速运APP -> 我的 -> 积分
-
->搜索 `https://mcs-mimp-web.sf-express.com/mcs-mimp/share/app/...` 的响应头，找到`sessionId` `_login_mobile_` `_login_user_id_`
+>[扫码登录获取CK](https://sm.9999.blue/)
 
 >CK格式：`sessionId=ABC;_login_mobile_=123;_login_user_id_=DEF` `&`
 
