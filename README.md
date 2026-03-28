@@ -35,17 +35,6 @@ ql repo https://gitee.com/hlt1995/qlScripts.git "" "Backup" "" "" "js|sh|py"
 >CK格式：`Authorization` `@`
 
 
-### 🏅 Microsoft Rewards 自动积分
-
-- `Microsoft_Rewards_v2.1.py` &emsp;环境变量：`bing_ck_1`
-
->浏览器登录 [https://cn.bing.com/](https://cn.bing.com/) -> 右上角的积分 -> 查看仪表板
-
->抓取包含`tifacfaatcs`和`.MSA.Auth`字段的Cookie
-
->CK格式：`整段Cookie`
-
-
 ### 📦️ 顺丰速运
 
 - `SFExpress.py` `SFExpress_Year.py` `SFExpress_Lottery.py` &emsp;环境变量：`sfsyUrl`
