@@ -1,14 +1,11 @@
-# cron: 0 12 * * *
-# const $ = new Env('顺丰速运33周年活动')
-
 """
 
 顺丰33周年活动 - 完成任务抽勋章
 Author: 爱学习的呆子
-Version: 1.1.0
-Date: 2026-03-19
+Version: 1.2.0
+Date: 2026-03-26
 
-顺丰暗号环境变量：sfsyah
+暗号答案通过环境变量 sfsyah 填写当天答案，历史答案从API获取，运行时展示开奖结果及奖励
 
 """
 
@@ -45,9 +42,6 @@ print_lock = Lock()
 ACTIVITY_CODE = "ANNIVERSARY_2026"
 TOKEN = 'wwesldfs29aniversaryvdld29'
 SYS_CODE = 'MCS-MIMP-CORE'
-
-# 暗号环境变量（可选，不设置则自动从API获取答案）
-GUESS_ANSWER_ENV = 'sfsyah'
 
 # 需要跳过的任务类型（需要实际操作的）
 SKIP_TASK_TYPES = [
@@ -431,10 +425,10 @@ class AnniversaryExecutor:
     # ---------- 业务逻辑 ----------
 
     def do_guess_game(self) -> bool:
-        """对暗号任务：读取所有日期的题目，按顺序匹配环境变量中的暗号逐日提交"""
+        """对暗号任务：从API获取题目和答案，逐日提交"""
         self.logger.task('[对暗号赢免单] 开始...')
 
-        # 1. 获取题目列表
+        # 1. 获取题目列表（含答案）
         guess_info = self.get_guess_title_list()
         if not guess_info:
             self.logger.warning('[对暗号] 获取题目列表失败')
@@ -452,14 +446,7 @@ class AnniversaryExecutor:
 
         self.logger.info(f'[对暗号] 共 {len(title_list)} 天题目，当前日期: {current_period}')
 
-        # 2. 读取环境变量中的暗号列表（每行一个，按日期顺序对应）
-        env_answers_raw = os.getenv(GUESS_ANSWER_ENV, '').strip()
-        env_answers = [a.strip() for a in env_answers_raw.split('\n') if a.strip()] if env_answers_raw else []
-
-        if env_answers:
-            self.logger.info(f'[对暗号] 环境变量已设置 {len(env_answers)} 个暗号')
-
-        # 3. 逐日处理
+        # 2. 逐日处理
         any_success = False
         for i, title in enumerate(title_list):
             period = title.get('period', '')
@@ -477,17 +464,22 @@ class AnniversaryExecutor:
                 self.logger.info(f'[对暗号] {period} 尚未开放，跳过')
                 continue
 
-            # 获取答案：优先环境变量按顺序匹配，其次API返回的answerInfo
-            answer = ''
-            if i < len(env_answers):
-                answer = env_answers[i]
-            if not answer:
-                answer = title.get('answerInfo', '')
+            # 从API返回的answerInfo获取答案
+            answer = title.get('answerInfo', '')
 
             if not answer:
-                self.logger.warning(f'[对暗号] {period} 无法获取答案（提示: {tip}）')
-                self.logger.info(f'[对暗号] 请在环境变量 {GUESS_ANSWER_ENV} 第 {i + 1} 行填写该日暗号')
-                continue
+                # API未返回答案，尝试从环境变量获取当天答案
+                if period == current_period:
+                    env_answer = os.getenv('sfsyah', '').strip()
+                    if env_answer:
+                        answer = env_answer
+                        self.logger.info(f'[对暗号] {period} 使用环境变量 sfsyah 答案: {answer}')
+                    else:
+                        self.logger.warning(f'[对暗号] {period} API未返回答案且未设置环境变量 sfsyah（提示: {tip}）')
+                        continue
+                else:
+                    self.logger.warning(f'[对暗号] {period} API未返回答案（提示: {tip}）')
+                    continue
 
             self.logger.info(f'[对暗号] {period} 提交答案: {answer}')
 
@@ -515,6 +507,58 @@ class AnniversaryExecutor:
             time.sleep(1)
 
         return any_success
+
+    def show_guess_results(self) -> None:
+        """展示暗号开奖结果及奖励信息"""
+        guess_info = self.get_guess_title_list()
+        if not guess_info:
+            self.logger.warning('[暗号开奖] 获取开奖结果失败')
+            return
+
+        title_list = guess_info.get('guessTitleInfoList', [])
+        if not title_list:
+            self.logger.info('[暗号开奖] 暂无开奖数据')
+            return
+
+        title_list.sort(key=lambda x: x.get('period', ''))
+
+        self.logger.info('=' * 20 + '  暗号开奖结果  ' + '=' * 20)
+
+        for title in title_list:
+            period = title.get('period', '')
+            answer_status = title.get('answerStatus')
+            answer_info = title.get('answerInfo', '')
+            answer_analysis = title.get('answerAnalysis', '')
+            tip = title.get('tip', '')
+            award_list = title.get('awardList', [])
+
+            if answer_status == 1:
+                self.logger.success(f'日期: {period}  答案: {answer_info}')
+                if answer_analysis:
+                    self.logger.info(f'解析: {answer_analysis}')
+                if award_list:
+                    self.logger.info('获得奖励:')
+                    for award in award_list:
+                        product_name = award.get('productName') or award.get('couponName', '未知奖品')
+                        amount = award.get('amount', 1)
+                        coupon_no = award.get('couponNo', '')
+                        denomination = award.get('denomination', '')
+                        limit_money = award.get('limitMoney', '')
+                        desc = product_name
+                        if denomination and limit_money:
+                            desc = f'{denomination}折寄件券（最高抵扣{limit_money}元）' if '折' in product_name else product_name
+                        coupon_info = f'（券号: {coupon_no}）' if coupon_no else ''
+                        self.logger.info(f'  - {desc} x{amount} {coupon_info}')
+                else:
+                    self.logger.info('暂无奖励信息')
+            elif answer_info:
+                # 有答案但未作答（answerStatus != 1）
+                self.logger.warning(f'日期: {period}  答案: {answer_info}（未作答）')
+            else:
+                # 未公布答案
+                self.logger.info(f'日期: {period}  提示: {tip}（答案未公布）')
+
+        self.logger.info('=' * 56)
 
     def do_tasks(self, result: Dict) -> None:
         """执行所有可自动完成的任务"""
@@ -720,6 +764,9 @@ class AnniversaryExecutor:
         # 3. 抽勋章
         self.do_claim_medals(result)
 
+        # 4. 展示暗号开奖结果及奖励
+        self.show_guess_results()
+
         return result
 
 
@@ -787,15 +834,11 @@ def main():
         print(f"❌ 环境变量 {env_name} 为空或格式错误")
         return
 
-    # 暗号提示
-    guess_answer = os.getenv(GUESS_ANSWER_ENV, '')
+    guess_answer = os.getenv('sfsyah', '').strip()
     if guess_answer:
-        answer_lines = [a.strip() for a in guess_answer.strip().split('\n') if a.strip()]
-        print(f"🔑 已设置暗号环境变量，共 {len(answer_lines)} 个暗号（按日期顺序对应）")
-        for i, a in enumerate(answer_lines):
-            print(f"   第{i+1}天: {a}")
+        print(f"🔑 今日暗号答案: {guess_answer}（来自环境变量 sfsyah）")
     else:
-        print(f"🔑 未设置暗号环境变量({GUESS_ANSWER_ENV})，将自动从API获取答案")
+        print(f"⚠️ 未设置环境变量 sfsyah，当天暗号将无法作答（历史答案从API获取）")
 
     random.shuffle(account_urls)
 
